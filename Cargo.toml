@@ -1,0 +1,22 @@
+[package]
+name = "zi18n"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+authors = ["LIghtJUNction"]
+repository = "https://github.com/LIghtJUNction/zi18n"
+description = "Borrowed no_std localization catalogs, explicit fallback, and named formatting"
+readme = "README.md"
+keywords = ["i18n", "localization", "no-std", "pluralization"]
+categories = ["internationalization", "no-std"]
+include = ["/src/**", "/tests/**", "/examples/**", "/docs/design.md", "/README.md", "/LICENSE", "/Cargo.toml"]
+
+[features]
+default = []
+alloc = []
+std = ["alloc"]
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
