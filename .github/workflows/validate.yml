@@ -1,0 +1,117 @@
+name: Validate zi18n release candidate
+run-name: Validate zi18n ${{ inputs.candidate }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate:
+        description: Exact 40-character zi18n commit to validate
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      candidate:
+        description: Exact 40-character zi18n commit to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CANDIDATE_SHA: ${{ inputs.candidate }}
+  CARGO_BUILD_JOBS: "1"
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: '1.100.0'
+          - os: macos-latest
+            rust: '1.100.0'
+          - os: windows-latest
+            rust: '1.100.0'
+          - os: ubuntu-latest
+            rust: '1.85.0'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: LIghtJUNction/zi18n
+          ref: ${{ inputs.candidate }}
+          persist-credentials: false
+      - name: Verify candidate identity
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca
+        with:
+          toolchain: ${{ matrix.rust }}
+      - name: Test each feature configuration
+        run: |
+          for selection in "--no-default-features" "--features alloc" "--features std" "--all-features"; do
+            read -r -a flags <<< "$selection"
+            cargo test --locked --offline --all-targets "${flags[@]}"
+            cargo test --locked --offline --doc "${flags[@]}"
+          done
+
+  no-std:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [wasm32-unknown-unknown, x86_64-unknown-none]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: LIghtJUNction/zi18n
+          ref: ${{ inputs.candidate }}
+          persist-credentials: false
+      - name: Verify candidate identity
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca
+        with:
+          toolchain: '1.100.0'
+          targets: ${{ matrix.target }}
+      - name: Check core and alloc
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          cargo check --locked --offline --lib --target "$TARGET" --no-default-features
+          cargo check --locked --offline --lib --target "$TARGET" --no-default-features --features alloc
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: LIghtJUNction/zi18n
+          ref: ${{ inputs.candidate }}
+          persist-credentials: false
+      - name: Verify candidate identity
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca
+        with:
+          toolchain: '1.100.0'
+          components: rustfmt, clippy
+      - run: cargo fmt --all -- --check
+      - name: Lint each feature configuration
+        run: |
+          for selection in "--no-default-features" "--features alloc" "--features std" "--all-features"; do
+            read -r -a flags <<< "$selection"
+            cargo clippy --locked --offline --all-targets "${flags[@]}" -- -D warnings
+          done
+      - run: RUSTDOCFLAGS="-D warnings" cargo doc --locked --offline --no-deps --all-features
+      - name: Verify archive and run extracted consumer
+        run: python3 scripts/verify_package.py --candidate "$CANDIDATE_SHA" --work-dir "$RUNNER_TEMP"
