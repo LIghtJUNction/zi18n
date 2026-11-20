@@ -2,6 +2,17 @@
 
 zi18n is Project Z's Rust library for borrowed localization catalogs, explicit language fallback, and named template formatting. The application supplies the messages, requested locale, and fallback order. The core has zero runtime dependencies and requires no allocator. Caller-supplied `Write` and `Display` implementations control their own allocations.
 
+## Install
+
+Add the registry release to your Cargo manifest.
+
+```toml
+[dependencies]
+zi18n = { version = "=0.1.0", default-features = false }
+```
+
+[Release verification](https://github.com/LIghtJUNction/zi18n/blob/main/docs/releases/0.1.0.md) records the published package and registry-consumer checks.
+
 ## Example
 
 The same catalog set can serve plain labels and plural counters. A missing Chinese key can fall back to English, and the returned message carries the locale of its actual catalog.
