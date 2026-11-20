@@ -12,7 +12,9 @@ These types have no runtime dependencies and require no allocator. Validation us
 
 The parser follows the language-tag productions in RFC 5646 §2.1 and checks variant and extension singleton uniqueness. It accepts syntactically valid unregistered combinations. A grandfathered spelling is retained as supplied. [RFC 5646 §2.1](https://www.rfc-editor.org/rfc/rfc5646.html#section-2.1), [§2.2.9](https://www.rfc-editor.org/rfc/rfc5646.html#section-2.2.9)
 
-Lookup truncates the request according to the singleton rule from RFC 4647 §3.4. A shorter candidate may keep a shorter extension or private-use sequence. After the requested parents, the caller's fallback list supplies exact candidates. Every lookup starts from the full request for the specific key. [RFC 4647 §3.4](https://www.rfc-editor.org/rfc/rfc4647.html#section-3.4)
+Lookup truncates the request according to the singleton rule from RFC 4647 §3.4. A shorter candidate may keep a shorter extension or private-use sequence. Every lookup starts from the full request for the specific key. [RFC 4647 §3.4](https://www.rfc-editor.org/rfc/rfc4647.html#section-3.4)
+
+The fallback list supplies exact catalog locales in priority order after the requested parents. `Catalogs::new` checks each entry against the catalog set case-insensitively and reports the first unknown index. Only the requested locale expands to its parents. An empty list ends lookup after the requested hierarchy.
 
 ## Rendering
 

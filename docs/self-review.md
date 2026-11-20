@@ -7,7 +7,8 @@ The documentation starts with the application problem and a working example. It 
 | Claim | Evidence |
 | --- | --- |
 | Locale structure is checked separately from registry validity | `accepts_structural_language_tags_and_preserves_spelling`, `rejects_malformed_language_tags`, and duplicate variant and singleton checks in `tests/locale_catalog.rs` |
-| Fallback is per key, ordered, observable, and handles singleton truncation | `looks_up_each_key_through_exact_parent_and_ordered_fallback_catalogs`, `configured_fallback_checks_exact_catalog_only`, and `lookup_crosses_extension_and_private_use_singletons` |
+| Fallback is per key, ordered, and observable. Requested parents handle repeated private-use singletons and grandfathered tags | `looks_up_each_key_through_exact_parent_and_ordered_fallback_catalogs`, `truncates_extensions_private_use_and_grandfathered_tags`, and `lookup_crosses_extension_and_private_use_singletons` |
+| Configured fallbacks require exact catalog membership. An empty list uses only the requested hierarchy | `rejects_configured_fallbacks_without_an_exact_catalog` and `configured_fallback_checks_exact_catalog_only` |
 | Catalog validation catches duplicate identities and malformed templates | Duplicate locale and key checks and invalid text and plural template checks in `tests/locale_catalog.rs` and `tests/plurals.rs` |
 | Formatting accepts Unicode and opaque replacement values and makes zero writes on input errors | `unicode_escapes_repeated_placeholders_and_opaque_replacements`, `malformed_placeholders_return_utf8_byte_offsets`, and `preflight_failures_write_nothing_and_do_not_call_display` |
 | Valid extra arguments are ignored and failed output may leave a prefix | `valid_extra_arguments_are_ignored_and_names_are_case_sensitive` and the failing sink and replacement tests in `tests/formatting.rs` |

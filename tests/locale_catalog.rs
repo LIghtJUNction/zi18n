@@ -107,6 +107,7 @@ fn truncates_extensions_private_use_and_grandfathered_tags() {
             "en-7-demo-a-xy-x-a-tail",
             &["en-7-demo-a-xy", "en-7-demo", "en"],
         ),
+        ("en-x-a-b-long", &["en"]),
         ("x-alpha-7", &["x-alpha"]),
         ("x-a-b", &[]),
         ("i-klingon", &[]),
@@ -140,7 +141,7 @@ fn looks_up_each_key_through_exact_parent_and_ordered_fallback_catalogs() {
         .iter()
         .map(|&(tag, definitions)| Catalog::new(locale(tag), definitions).unwrap())
         .collect();
-    let fallback = [locale("pt-BR"), locale("en-gb"), locale("fr"), locale("en")];
+    let fallback = [locale("en-gb"), locale("fr"), locale("en")];
     let messages = Catalogs::new(&catalogs, &fallback).unwrap();
     let request = locale("ZH-hant-HK");
     let cases = [
@@ -164,16 +165,40 @@ fn looks_up_each_key_through_exact_parent_and_ordered_fallback_catalogs() {
 }
 
 #[test]
+fn rejects_configured_fallbacks_without_an_exact_catalog() {
+    let catalogs = [Catalog::new(locale("en"), &[]).unwrap()];
+    assert_eq!(
+        Catalogs::new(&catalogs, &[locale("EN"), locale("pt-BR")]).unwrap_err(),
+        CatalogError::UnknownFallback { index: 1 }
+    );
+    assert_eq!(
+        Catalogs::new(&catalogs, &[locale("en-GB")]).unwrap_err(),
+        CatalogError::UnknownFallback { index: 0 }
+    );
+}
+
+#[test]
 fn configured_fallback_checks_exact_catalog_only() {
     const EN: &[Message<'static>] = &[Message::text("hello", "Hello")];
-    let catalogs = [Catalog::new(locale("en"), EN).unwrap()];
+    const EN_GB: &[Message<'static>] = &[Message::text("colours", "Colours")];
+    let catalogs = [
+        Catalog::new(locale("en"), EN).unwrap(),
+        Catalog::new(locale("en-GB"), EN_GB).unwrap(),
+    ];
     let fallback = [locale("en-GB")];
     let messages = Catalogs::new(&catalogs, &fallback).unwrap();
-    assert!(messages.lookup(locale("fr"), "hello").is_err());
+    let request = locale("fr");
+    assert_eq!(
+        messages.lookup(request, "colours").unwrap().locale(),
+        fallback[0]
+    );
+    assert!(messages.lookup(request, "hello").is_err());
     assert_eq!(
         messages.lookup(locale("en-GB"), "hello").unwrap().text(),
         Some("Hello")
     );
+    let no_fallback = Catalogs::new(&catalogs, &[]).unwrap();
+    assert!(no_fallback.lookup(request, "colours").is_err());
 }
 
 #[test]

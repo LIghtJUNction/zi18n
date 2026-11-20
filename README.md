@@ -1,6 +1,6 @@
 # zi18n
 
-zi18n is Project Z's Rust library for borrowed localization catalogs, explicit language fallback, and named template formatting. The application supplies the messages, requested locale, and fallback order. The library has zero runtime dependencies and allocates nothing in its default API.
+zi18n is Project Z's Rust library for borrowed localization catalogs, explicit language fallback, and named template formatting. The application supplies the messages, requested locale, and fallback order. The core has zero runtime dependencies and requires no allocator. Caller-supplied `Write` and `Display` implementations control their own allocations.
 
 ## Example
 
@@ -60,7 +60,9 @@ Rust 1.85.0 is the minimum supported version. The crate uses edition 2024.
 
 `Locale::parse` borrows the original tag and checks RFC 5646 structure, including extlangs, extensions, private use, and the fixed grandfathered tags. It rejects duplicate variants and extension singletons. Locale comparisons ignore ASCII case. Registry validity, alias canonicalization, extension semantics, likely subtags, and OS locale discovery are outside this API. [RFC 5646 §2.1](https://www.rfc-editor.org/rfc/rfc5646.html#section-2.1), [§2.2.9](https://www.rfc-editor.org/rfc/rfc5646.html#section-2.2.9)
 
-Lookup searches **per key** in the exact request, its truncated parents, then the caller's configured fallback locales in order. A configured fallback names an exact catalog. Include its parent explicitly if desired. The search skips absent catalogs and absent keys, returns the matched catalog's original locale spelling, and produces `MissingMessage` when it runs out of candidates.
+Lookup searches **per key** in the exact request, its truncated parents, then the caller's configured fallback locales in order. The search skips absent request candidates and absent keys, returns the matched catalog's original locale spelling, and produces `MissingMessage` when it runs out of candidates.
+
+Each configured fallback must name an exact catalog, ignoring ASCII case. `Catalogs::new` returns `CatalogError::UnknownFallback` with the zero-based index of the first missing catalog. Pass `&[]` for no configured fallback. The search uses the list as supplied, so include any desired fallback parent explicitly.
 
 Parent truncation strips trailing singleton subtags along with the last subtag. For example, `zh-Hant-HK-u-nu-hanidec` tries `zh-Hant-HK-u-nu`, then `zh-Hant-HK`, `zh-Hant`, and `zh`. This is an exact-catalog policy with no Accept-Language parsing, locale expansion, or `zh-HK` to `zh-Hant` inference. [RFC 4647 §3.4](https://www.rfc-editor.org/rfc/rfc4647.html#section-3.4)
 

@@ -98,10 +98,10 @@ pub struct Catalogs<'tables, 'data> {
 }
 
 impl<'tables, 'data> Catalogs<'tables, 'data> {
-    /// Rejects duplicate catalog locales, compared case-insensitively.
+    /// Rejects duplicate catalog locales and unknown fallback locales.
     ///
-    /// Configured fallbacks are exact catalog locales in priority order.
-    /// A fallback without a catalog is skipped.
+    /// Each fallback must name an exact catalog locale, ignoring ASCII case.
+    /// List the fallbacks in priority order, or pass `&[]` for no fallback.
     pub fn new(
         catalogs: &'tables [Catalog<'data>],
         fallbacks: &'tables [Locale<'tables>],
@@ -112,6 +112,11 @@ impl<'tables, 'data> Catalogs<'tables, 'data> {
                 .any(|prior| prior.locale == catalog.locale)
             {
                 return Err(CatalogError::DuplicateLocale(catalog.locale));
+            }
+        }
+        for (index, fallback) in fallbacks.iter().enumerate() {
+            if !catalogs.iter().any(|catalog| catalog.locale == *fallback) {
+                return Err(CatalogError::UnknownFallback { index });
             }
         }
         Ok(Self {
@@ -227,6 +232,11 @@ impl<'data> MatchedMessage<'data> {
 pub enum CatalogError<'data> {
     /// Two catalogs declare the same locale, ignoring ASCII case.
     DuplicateLocale(Locale<'data>),
+    /// A configured fallback has no exact catalog.
+    UnknownFallback {
+        /// Zero-based index in the configured fallback list.
+        index: usize,
+    },
     /// A key occurs more than once in one catalog.
     DuplicateKey(&'data str),
     /// A plural category occurs more than once for the key.
@@ -253,6 +263,9 @@ impl fmt::Display for CatalogError<'_> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::DuplicateLocale(locale) => write!(formatter, "duplicate catalog locale {locale}"),
+            Self::UnknownFallback { index } => {
+                write!(formatter, "no catalog for fallback at index {index}")
+            }
             Self::DuplicateKey(key) => write!(formatter, "duplicate message key {key:?}"),
             Self::DuplicatePluralCategory { key, category } => {
                 write!(formatter, "duplicate {category:?} form for {key:?}")
