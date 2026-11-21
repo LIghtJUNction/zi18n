@@ -75,7 +75,7 @@ Lookup searches **per key** in the exact request, its truncated parents, then th
 
 Each configured fallback must name an exact catalog, ignoring ASCII case. `Catalogs::new` returns `CatalogError::UnknownFallback` with the zero-based index of the first missing catalog. Pass `&[]` for no configured fallback. The search uses the list as supplied, so include any desired fallback parent explicitly.
 
-Parent truncation strips trailing singleton subtags along with the last subtag. For example, `zh-Hant-HK-u-nu-hanidec` tries `zh-Hant-HK-u-nu`, then `zh-Hant-HK`, `zh-Hant`, and `zh`. This is an exact-catalog policy with no Accept-Language parsing, locale expansion, or `zh-HK` to `zh-Hant` inference. [RFC 4647 §3.4](https://www.rfc-editor.org/rfc/rfc4647.html#section-3.4)
+Parent truncation removes the last subtag and all consecutive single-character subtags immediately before it, including private-use values. For example, `en-x-a-tail` goes directly to `en`, skipping the valid tag `en-x-a`. The request `zh-Hant-HK-u-nu-hanidec` tries `zh-Hant-HK-u-nu`, then `zh-Hant-HK`, `zh-Hant`, and `zh`. This is an exact-catalog policy with no Accept-Language parsing or likely-subtag inference such as `zh-HK` to `zh-Hant`. [RFC 4647 §3.4](https://www.rfc-editor.org/rfc/rfc4647.html#section-3.4)
 
 ## Catalogs and formatting
 
