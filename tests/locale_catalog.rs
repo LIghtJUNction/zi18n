@@ -228,6 +228,24 @@ fn lookup_crosses_extension_and_private_use_singletons() {
 }
 
 #[test]
+fn lookup_skips_a_parent_ending_in_a_single_character_private_use_value() {
+    let base = [Message::text("label", "Base")];
+    let private = [Message::text("label", "Private")];
+    let catalogs = [
+        Catalog::new(locale("en"), &base).unwrap(),
+        Catalog::new(locale("en-x-a"), &private).unwrap(),
+    ];
+    let messages = Catalogs::new(&catalogs, &[]).unwrap();
+
+    let exact = messages.lookup(locale("en-x-a"), "label").unwrap();
+    assert_eq!(exact.text(), Some("Private"));
+
+    let parent = messages.lookup(locale("en-x-a-tail"), "label").unwrap();
+    assert_eq!(parent.locale(), locale("en"));
+    assert_eq!(parent.text(), Some("Base"));
+}
+
+#[test]
 fn rejects_duplicate_catalog_locales_and_keys_but_allows_case_distinct_keys() {
     let catalogs = [
         Catalog::new(locale("zh-Hans"), &[]).unwrap(),
